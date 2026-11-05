@@ -48,7 +48,7 @@ AI content at scale can hurt a site. The defaults are deliberately conservative:
 - every file is validated before commit;
 - each run has a spend cap.
 
-[SAFETY.md](SAFETY.md) lists every risk and guard.
+[SAFETY.md](SAFETY.md) lists every risk and guard. The dashboard has a **Dos & don’ts** page, and it warns on the Overview and Settings pages whenever a setting turns a guard off or pushes it past a safe limit.
 
 ## What it does every day
 

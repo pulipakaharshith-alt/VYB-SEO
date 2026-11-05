@@ -1,7 +1,9 @@
 import { createDefaults, saveSettings } from '../actions';
+import { GuideSummary } from '../guide-summary';
 import { Button, Card, attempt, ErrorBox, Notice } from '../ui';
 import { loadContext, PATHS } from '@/lib/config';
 import { env } from '@/lib/env';
+import { riskySettings } from '@/lib/guide';
 
 export default async function SettingsPage({ searchParams }: PageProps<'/settings'>) {
   const sp = await searchParams;
@@ -15,6 +17,7 @@ export default async function SettingsPage({ searchParams }: PageProps<'/setting
     <div className="space-y-6">
       {sp.saved && <Notice tone="ok">Saved to {env.githubRepo}.</Notice>}
       {typeof sp.error === 'string' && <Notice tone="bad">{sp.error}</Notice>}
+      {ctx.configured && <GuideSummary risky={riskySettings(ctx.config)} compact />}
       {!ctx.configured && (
         <Card title="First time">
           <p className="mb-3 text-sm text-muted">
@@ -38,6 +41,7 @@ export default async function SettingsPage({ searchParams }: PageProps<'/setting
               <li><code>productPages</code>: pages articles may link and mention. <code>linkRemaps</code>: old/login-only paths → public pages.</li>
               <li><code>publish.mode</code>: &quot;pr&quot; (review first) or &quot;direct&quot;. <code>run</code>: how much each run does and the spend cap.</li>
               <li><code>research.seeds</code>: topics to expand through Google Autocomplete into new keywords.</li>
+              <li><code>safety</code>: guard rails (weekly post limit, protected top pages, refresh shrink limit, claims check, external link limit). See <a href="/guide" className="underline">Dos &amp; don&apos;ts</a>.</li>
             </ul>
           </details>
         </Card>

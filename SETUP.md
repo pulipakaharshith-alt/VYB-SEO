@@ -220,13 +220,14 @@ Optional variables (Search Console, IndexNow, model and price overrides) are lis
 ## 8. Verify and first run
 
 1. Open the deployment URL. Log in with any username and the dashboard password.
-2. **Overview** shows a setup checklist: everything required should be ✓. If "GitHub repo" fails, the token
+2. Read the **Dos & don’ts** page in the dashboard with the user. If the Overview shows **Risky settings**, go through each one.
+3. **Overview** shows a setup checklist: everything required should be ✓. If "GitHub repo" fails, the token
    lacks access or permissions.
-3. **Settings** should show the config and brand notes committed in steps 2–3.
-4. **Audit** lists issues in existing posts. Broken links and missing descriptions found here are worth fixing.
-5. Back on **Overview**, set *New articles* to 1 and click **Start run**. A run takes a few minutes. A pull
+4. **Settings** should show the config and brand notes committed in steps 2–3.
+5. **Audit** lists issues in existing posts. Broken links and missing descriptions found here are worth fixing.
+6. Back on **Overview**, set *New articles* to 1 and click **Start run**. A run takes a few minutes. A pull
    request appears in the website repo with the article and a report.
-6. Check the PR's preview deployment: the new post must render, and the build must pass. If it fails, the usual
+7. Check the PR's preview deployment: the new post must render, and the build must pass. If it fails, the usual
    cause is a required frontmatter field missing from `frontmatter.extra`; fix `config.json` and run again.
 
 After that, it runs every day on its own.

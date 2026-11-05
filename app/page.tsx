@@ -1,10 +1,12 @@
 import Link from 'next/link';
 import { getRun } from 'workflow/api';
 import { runNow } from './actions';
+import { GuideSummary } from './guide-summary';
 import { attempt, Badge, Button, Card, ErrorBox, Notice, Stat } from './ui';
 import { loadContext, loadQueue, loadState, pendingByPriority } from '@/lib/config';
 import { env, missingSetup } from '@/lib/env';
 import { agentPulls, checkAccess, listFiles } from '@/lib/github';
+import { riskySettings } from '@/lib/guide';
 import { googleConfigured } from '@/lib/search';
 
 async function runStatus(id: string): Promise<string> {
@@ -65,6 +67,8 @@ export default async function Overview({ searchParams }: PageProps<'/'>) {
         <Stat label="Open agent PRs" value={pulls.length} />
         <Stat label="AI spend this month" value={`$${monthSpend.toFixed(2)}`} hint={`cap $${env.maxSpendUsd ?? ctx.config.run.maxSpendUsd}/run`} />
       </div>
+
+      <GuideSummary risky={ctx.configured ? riskySettings(ctx.config) : []} />
 
       <Card title="Run now">
         <form action={runNow} className="flex flex-wrap items-end gap-3 text-sm">

@@ -18,6 +18,7 @@ const NAV = [
   { href: '/audit', label: 'Audit' },
   { href: '/reports', label: 'Reports' },
   { href: '/settings', label: 'Settings' },
+  { href: '/guide', label: 'Dos & don’ts' },
 ];
 
 export default function RootLayout({ children }: LayoutProps<'/'>) {
