@@ -1,0 +1,10 @@
+{
+  "name": "vyb-seo",
+  "description": "SEO agent for Markdown/MDX blogs: audit, keyword research, write and refresh articles behind a quality gate, interlink, and open a pull request. Runs on your Claude subscription.",
+  "version": "0.1.0",
+  "author": { "name": "pulipakaharshith-alt" },
+  "homepage": "https://github.com/pulipakaharshith-alt/VYB-SEO",
+  "repository": "https://github.com/pulipakaharshith-alt/VYB-SEO",
+  "license": "MIT",
+  "keywords": ["seo", "blog", "content", "markdown"]
+}

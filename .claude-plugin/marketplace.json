@@ -1,0 +1,12 @@
+{
+  "name": "vyb-seo-marketplace",
+  "description": "VYB-SEO: an SEO agent for Markdown/MDX blogs",
+  "owner": { "name": "pulipakaharshith-alt" },
+  "plugins": [
+    {
+      "name": "vyb-seo",
+      "source": "./plugin",
+      "description": "Audit, research, write and refresh blog posts behind a quality gate, then open a pull request. Uses your Claude subscription."
+    }
+  ]
+}

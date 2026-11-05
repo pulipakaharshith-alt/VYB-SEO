@@ -1,0 +1,54 @@
+# VYB-SEO on a schedule, using your Claude subscription (no API key).
+#
+# Copy this file into YOUR WEBSITE REPO at .github/workflows/seo-agent.yml.
+# Setup (see SETUP.md → "Claude subscription"):
+#   1. In Claude Code, run /install-github-app (installs the Claude GitHub App on this repo), or install it from
+#      https://github.com/apps/claude
+#   2. Run `claude setup-token` locally and save the token as the repo secret CLAUDE_CODE_OAUTH_TOKEN
+#      (Settings → Secrets and variables → Actions). Set only this secret, not ANTHROPIC_API_KEY too.
+#   3. Commit this file to the default branch. Scheduled workflows only run from the default branch.
+#
+# Every run opens a pull request. Nothing is published until you merge it.
+
+name: SEO agent (Claude Code)
+
+on:
+  schedule:
+    - cron: '17 9 * * 1,4' # Mon + Thu, 09:17 UTC. Twice a week keeps within subscription usage limits.
+  workflow_dispatch:
+    inputs:
+      task:
+        description: 'run | write <keyword> | refresh <slug> | audit | research'
+        default: run
+
+permissions:
+  contents: write
+  pull-requests: write
+  issues: write
+  id-token: write
+
+concurrency:
+  group: seo-agent
+  cancel-in-progress: false
+
+jobs:
+  seo:
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+
+      - uses: anthropics/claude-code-action@v1
+        env:
+          # Lets the skill open the pull request with `gh pr create`.
+          GH_TOKEN: ${{ github.token }}
+        with:
+          claude_code_oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
+          plugin_marketplaces: https://github.com/pulipakaharshith-alt/VYB-SEO.git
+          plugins: vyb-seo@vyb-seo-marketplace
+          prompt: /vyb-seo:seo ${{ inputs.task || 'run' }}
+          claude_args: |
+            --max-turns 150
+            --allowedTools "Read,Glob,Grep,Edit,Write,WebSearch,WebFetch,Task,Bash(node *),Bash(git *),Bash(gh pr *)"
