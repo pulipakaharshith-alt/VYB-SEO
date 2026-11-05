@@ -10,6 +10,18 @@ the user does the few steps that need their accounts (marked **👤 User**).
 > Follow its SETUP.md: inspect this repo, write `.seo-agent/config.json` and `.seo-agent/brand.md`,
 > commit them, then walk me through deploying it to Vercel.
 
+## Choose how it runs
+
+| | **A. Vercel app** | **B. Claude subscription** |
+|---|---|---|
+| Pays with | Anthropic or OpenAI **API key** (per token) | Your **Claude Pro/Max/Team/Enterprise** plan (usage limits) |
+| Runs | Daily, automatically, on Vercel | On demand in Claude Code (`/vyb-seo:seo`), and optionally on a schedule via GitHub Actions |
+| Extras | Dashboard, spend cap, Search Console data, enforced claims check | No hosting; claims check and interlinking are instructions Claude follows |
+| Setup | Steps 0–8 below | Steps 0–5, then [step 9](#9-claude-subscription-no-api-key) |
+
+Both read the same `.seo-agent/` files, so a site can use either or both. Read [SAFETY.md](SAFETY.md) before the
+first run.
+
 ---
 
 ## 0. Check it fits
@@ -89,6 +101,7 @@ everything else falls back to them.
   "productPages": [{ "path": "/", "about": "Home page" }],
   "linkRemaps": {},
   "publish": { "mode": "pr" },
+  "safety": { "maxNewPerWeek": 3, "protectTopPages": 10, "minRetainRatio": 0.7, "claimsCheck": true, "maxExternalLinks": 6 },
   "run": { "newArticles": 1, "refreshes": 1, "metaRewrites": 2, "research": true, "maxSpendUsd": 5 },
   "qa": { "minWords": 1200, "maxWords": 4500, "minInternalLinks": 3, "metaTitleMax": 60, "metaDescriptionMin": 110, "metaDescriptionMax": 160 },
   "research": { "hl": "en", "gl": "us", "seeds": [], "picksPerRun": 10 }
@@ -107,6 +120,9 @@ Field notes:
   Leave empty to only write keywords the user queues by hand.
 - `publish.mode`: keep `"pr"` (every run opens a pull request to review) unless the user asks for fully automatic.
 - `run.maxSpendUsd`: hard cap per run in USD.
+- `safety`: the guard rails (pace cap, protected top pages, refresh shrink limit, claims check, external link
+  limit). Keep the defaults for a new site; see [SAFETY.md](SAFETY.md). For a young or small site, set
+  `maxNewPerWeek` to 1–2.
 
 ## 3. Write `.seo-agent/brand.md` (agent, then 👤 user reviews)
 
@@ -214,6 +230,50 @@ Optional variables (Search Console, IndexNow, model and price overrides) are lis
    cause is a required frontmatter field missing from `frontmatter.extra`; fix `config.json` and run again.
 
 After that, it runs every day on its own.
+
+## 9. Claude subscription (no API key)
+
+Uses Claude Code with your Claude plan instead of an API key. Do steps 0–5 first (the settings files).
+
+**Install the plugin** (in Claude Code, opened in the website repo):
+
+```
+/plugin marketplace add pulipakaharshith-alt/VYB-SEO
+/plugin install vyb-seo@vyb-seo-marketplace
+```
+
+(Claude Code 2.1.275+ can do it in one line: `/plugin install vyb-seo --marketplace pulipakaharshith-alt/vyb-seo`.)
+
+Without plugins, copy the folder `plugin/skills/seo/` from this repo into the website repo as `.claude/skills/seo/`;
+the command is then `/seo` instead of `/vyb-seo:seo`.
+
+**Use it:**
+
+| Command | Does |
+|---|---|
+| `/vyb-seo:seo run` | Full cycle: fixes, research, refresh, new articles (within the pace cap), report, pull request |
+| `/vyb-seo:seo write <keyword>` | One new article on that keyword |
+| `/vyb-seo:seo refresh <slug>` | Improve one existing post |
+| `/vyb-seo:seo audit` | Report problems without changing anything |
+| `/vyb-seo:seo research` | Find and queue new keywords |
+| `/vyb-seo:seo setup` | Write the settings files (steps 1–5) for a new site |
+
+Every article must pass the bundled checker (`scripts/seo-tools.mjs check`) before it's committed, and work
+always lands on a `seo-agent/…` branch with a pull request, never the default branch.
+
+**On a schedule (GitHub Actions):**
+
+1. 👤 In Claude Code run `/install-github-app` (installs the Claude GitHub App on the repo), or install it from
+   https://github.com/apps/claude.
+2. 👤 Run `claude setup-token` on your computer, then add the printed token as the repo secret
+   `CLAUDE_CODE_OAUTH_TOKEN` (Settings → Secrets and variables → Actions). Don't also set `ANTHROPIC_API_KEY`.
+3. Agent: copy [`templates/github-action/seo-agent.yml`](templates/github-action/seo-agent.yml) to the website repo at
+   `.github/workflows/seo-agent.yml` and commit it to the default branch.
+4. 👤 Actions → **SEO agent (Claude Code)** → Run workflow, to test once. A pull request should appear.
+
+Notes: runs count against your plan's usage limits (default schedule is twice a week); the token is tied to the
+account that created it and lasts a year; check Anthropic's current terms for automated use on your plan.
+Scheduled workflows on public repos pause after 60 days without repo activity.
 
 ## Optional upgrades
 

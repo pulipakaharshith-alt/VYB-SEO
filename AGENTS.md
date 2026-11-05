@@ -12,6 +12,10 @@ then deploying this repo, unmodified, to Vercel.
 - `lib/github.ts`: the content repo is the storage; atomic commits via the git data API.
 - `lib/config.ts`: site config and defaults; `lib/qa.ts` is the quality gate; `lib/audit.ts` the audit and fixes.
 - `app/`: dashboard (behind `proxy.ts` basic auth) and `/api/cron`.
+- `plugin/`: Claude Code plugin (`/vyb-seo:seo`); `plugin/skills/seo/scripts/seo-tools.mjs` is a dependency-free port
+  of the audit, quality gate and similarity logic. Keep its `DEFAULTS`, checks and `stem()` in sync with `lib/`.
+- `templates/github-action/`: scheduled workflow for subscription users. `SAFETY.md` documents every guard; update it
+  when a guard changes.
 
 Before a PR: `npx tsc --noEmit`, `npm run lint`, `npm run build`. Never commit keys or a real `.env.local`.
 

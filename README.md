@@ -23,6 +23,33 @@ The agent reads your blog, works out the folder, URL pattern and frontmatter fie
 notes from your site's own copy, and commits the settings. You then create a GitHub token and an AI key
 and deploy. Prefer doing it by hand? Follow [SETUP.md](SETUP.md) yourself, or the short version below.
 
+## No API key? Use your Claude subscription
+
+Run it from Claude Code on your Claude Pro/Max/Team/Enterprise plan:
+
+```
+/plugin marketplace add pulipakaharshith-alt/VYB-SEO
+/plugin install vyb-seo@vyb-seo-marketplace
+/vyb-seo:seo setup      # once: writes .seo-agent/ settings for your site
+/vyb-seo:seo run        # audit, research, write/refresh, open a pull request
+```
+
+It can also run on a schedule through GitHub Actions with a `claude setup-token` token; see
+[SETUP.md → Claude subscription](SETUP.md#9-claude-subscription-no-api-key).
+
+## Safety
+
+AI content at scale can hurt a site. The defaults are deliberately conservative:
+
+- at most 3 new posts a week;
+- every change arrives as a pull request;
+- the most-clicked pages are never rewritten, and a refresh can't shrink a post;
+- product claims are checked against your brand notes;
+- every file is validated before commit;
+- each run has a spend cap.
+
+[SAFETY.md](SAFETY.md) lists every risk and guard.
+
 ## What it does every day
 
 1. **Audit** your posts: broken and login-walled links, duplicate H1s, title and description lengths,

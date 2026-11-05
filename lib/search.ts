@@ -27,6 +27,8 @@ export interface GscData {
   /** Page-one pages earning far fewer clicks than their position should. */
   lowCtr: { slug: string; url: string; impressions: number; ctr: number; position: number }[];
   decaying: { slug: string; url: string; clicks: number; prevClicks: number }[];
+  /** Post slugs with the most clicks, best first (protected from rewrites). */
+  topPages: string[];
   /** Queries with impressions, summed across pages. */
   queries: { query: string; impressions: number; position: number }[];
 }
@@ -85,6 +87,12 @@ export async function searchConsole(site: string, slugOf: (url: string) => strin
       .map((r) => ({ slug: slugOf(r.keys[0]) ?? '', url: r.keys[0], clicks: r.clicks, prevClicks: prevBy.get(r.keys[0]) ?? 0 }))
       .filter((p) => p.slug && p.prevClicks >= 10 && p.clicks <= p.prevClicks * 0.6)
       .slice(0, 50),
+    topPages: pages
+      .filter((r) => r.clicks > 0)
+      .sort((a, b) => b.clicks - a.clicks)
+      .map((r) => slugOf(r.keys[0]))
+      .filter((x): x is string => Boolean(x))
+      .slice(0, 100),
     queries: [...queries.values()].sort((a, b) => b.impressions - a.impressions).slice(0, 1000),
   };
 }

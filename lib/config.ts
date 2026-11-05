@@ -46,6 +46,19 @@ export interface SiteConfig {
     /** "pr": open a pull request you merge. "direct": commit straight to the branch. */
     mode: 'pr' | 'direct';
   };
+  /** Guard rails. See SAFETY.md. */
+  safety: {
+    /** Most new articles published in any 7 days (open PRs count). Start low and raise slowly. */
+    maxNewPerWeek: number;
+    /** Never rewrite the N pages with the most clicks (needs Search Console). */
+    protectTopPages: number;
+    /** A refresh must keep at least this share of the original word count. */
+    minRetainRatio: number;
+    /** Second AI pass that checks every draft against the brand notes for unsupported claims. */
+    claimsCheck: boolean;
+    /** Most external links an article may contain. */
+    maxExternalLinks: number;
+  };
   run: {
     newArticles: number;
     refreshes: number;
@@ -95,6 +108,7 @@ export const DEFAULT_CONFIG: SiteConfig = {
   productPages: [{ path: '/', about: 'Home page' }],
   linkRemaps: {},
   publish: { mode: 'pr' },
+  safety: { maxNewPerWeek: 3, protectTopPages: 10, minRetainRatio: 0.7, claimsCheck: true, maxExternalLinks: 6 },
   run: { newArticles: 1, refreshes: 1, metaRewrites: 2, research: true, maxSpendUsd: 5 },
   qa: {
     minWords: 1200,

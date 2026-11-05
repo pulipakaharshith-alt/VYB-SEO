@@ -19,7 +19,7 @@ import {
   type AgentState,
   type QueueItem,
 } from '@/lib/config';
-import { buildPostFile, closestPost, loadPosts, parsePost, relatedPosts, splitRaw, type PostInfo } from '@/lib/content';
+import { buildPostFile, closestPost, loadPosts, parsePost, relatedPosts, splitRaw, validatePostFile, type PostInfo } from '@/lib/content';
 import { env } from '@/lib/env';
 import { agentPulls, changedOnBranch, commitFiles, createBranch, deleteBranch, mergeAndDelete, openPull, pullFiles, readFile } from '@/lib/github';
 import { linkChecker, sitemapPaths } from '@/lib/links';
@@ -52,6 +52,7 @@ export interface Plan {
   writes: QueueItem[];
   ping: { pulls: number[]; urls: string[] };
   summary: {
+    paced: string | null;
     issuesBefore: { code: string; severity: string; count: number }[];
     fixed: Record<string, number>;
     fixedFiles: number;
@@ -159,7 +160,10 @@ export async function prepareRun(input: RunInput & { runId: string }): Promise<P
     meta: input.metaRewrites ?? config.run.metaRewrites,
   };
   const slugs = new Set(index.map((p) => p.slug));
-  const okRefresh = (s: string | null): s is string => Boolean(s && slugs.has(s) && !recent(state.refreshed, s, 75));
+  // Never rewrite the pages that already earn the most clicks: the downside outweighs the upside.
+  const protectedPages = new Set(gsc?.topPages.slice(0, config.safety.protectTopPages) ?? []);
+  const okRefresh = (s: string | null): s is string =>
+    Boolean(s && slugs.has(s) && !protectedPages.has(s) && !recent(state.refreshed, s, 75));
 
   let refresh: Plan['refresh'] = [];
   if (gsc) {
@@ -192,9 +196,13 @@ export async function prepareRun(input: RunInput & { runId: string }): Promise<P
     .slice(0, n.meta)
     .map((p) => ({ ...p, queries: gsc!.striking.filter((s) => s.slug === p.slug).slice(0, 8).map((s) => s.query) }));
 
+  // Publishing pace cap: new articles in the last 7 days (including ones waiting in open PRs).
+  const weekAgo = Date.now() - 7 * 864e5;
+  const recentNew = queue.filter((k) => k.status === 'done' && k.doneAt && new Date(k.doneAt).getTime() > weekAgo).length;
+  const allowed = Math.max(0, Math.min(n.write, config.safety.maxNewPerWeek - recentNew));
   const writes: QueueItem[] = [];
   for (const item of pendingByPriority(queue)) {
-    if (writes.length >= n.write) break;
+    if (writes.length >= allowed) break;
     const close = closestPost(item.keyword, index);
     if (slugs.has(item.slug) || close.score >= config.qa.cannibalizationThreshold) {
       Object.assign(item, { status: 'skipped', note: `covered by ${close.post?.slug ?? item.slug}` });
@@ -219,6 +227,7 @@ export async function prepareRun(input: RunInput & { runId: string }): Promise<P
     writes,
     ping,
     summary: {
+      paced: allowed < n.write ? `new articles limited to ${allowed} (safety.maxNewPerWeek = ${config.safety.maxNewPerWeek}, ${recentNew} in the last 7 days)` : null,
       issuesBefore,
       fixed: fixes.counts,
       fixedFiles: Object.keys(fixes.files).length,
@@ -262,6 +271,8 @@ export async function writeArticle(a: { branch: string; item: QueueItem; index: 
       published: today(),
       updated: today(),
     });
+    const invalid = validatePostFile(config, file, text);
+    if (invalid.length) return { kind: 'new', slug: a.item.slug, ok: false, errors: invalid, usd: usd(usage) };
     await commitFiles({ [file]: text }, `SEO agent: new article "${draft.title}"`, a.branch);
     return { kind: 'new', slug: a.item.slug, ok: true, title: draft.title, detail: a.item.keyword, words: qa.words, warnings: qa.warnings, post: parsePost(config, file, text), usd: usd(usage) };
   } catch (e) {
@@ -291,6 +302,7 @@ export async function refreshArticle(a: { branch: string; target: Plan['refresh'
       keyword: kw,
       checkLink: linkChecker(config, a.index, a.sitemap),
       otherTitles: a.index.filter((p) => p.slug !== post.slug).flatMap((p) => [p.title, p.metaTitle]),
+      originalWords: post.words,
     });
     usage.push(...u2);
     if (qa.errors.length) return { kind: 'refresh', slug: post.slug, ok: false, errors: qa.errors, usd: usd(usage) };
@@ -304,7 +316,9 @@ export async function refreshArticle(a: { branch: string; target: Plan['refresh'
       keyword: kw,
       published: post.published || today(),
       updated: today(),
-    });
+    }, raw);
+    const invalid = validatePostFile(config, post.file, text);
+    if (invalid.length) return { kind: 'refresh', slug: post.slug, ok: false, errors: invalid, usd: usd(usage) };
     await commitFiles({ [post.file]: text }, `SEO agent: refresh "${draft.title}"`, a.branch);
     return { kind: 'refresh', slug: post.slug, ok: true, title: draft.title, detail: a.target.reason, words: qa.words, warnings: qa.warnings, usd: usd(usage) };
   } catch (e) {
@@ -384,6 +398,7 @@ export async function finishRun(a: { plan: Omit<Plan, 'index' | 'sitemap'>; resu
   const L: string[] = [`# SEO agent run, ${plan.date}`, ''];
   L.push(`**${news.length} new · ${refs.length} refreshed · ${metas.length} snippet rewrites · ${plan.summary.fixedFiles} files auto-fixed** · AI spend ≈ $${a.usd.toFixed(2)}`, '');
   if (a.stopped) L.push(`> ⚠️ Stopped early: ${a.stopped}`, '');
+  if (plan.summary.paced) L.push(`> ℹ️ Pace limit: ${plan.summary.paced}`, '');
   if (plan.summary.gsc) {
     const t = plan.summary.gsc;
     const delta = t.prevClicks ? `${(((t.clicks - t.prevClicks) / t.prevClicks) * 100).toFixed(0)}%` : 'n/a';
@@ -416,6 +431,7 @@ export async function finishRun(a: { plan: Omit<Plan, 'index' | 'sitemap'>; resu
     for (const k of plan.summary.researched) L.push(`- [${k.priority}] **${k.keyword}**: ${k.title}${k.why ? ` _(${k.why})_` : ''}`);
     L.push('');
   }
+  L.push('## Before you merge', '', '- Read each new or refreshed article: facts, tone, advice.', '- Check every external link opens and is reputable.', '- Open the preview deployment and confirm the posts render.', '- Anything wrong? Edit it in this PR, or close the PR to discard the run.', '');
   L.push('## Content health', '', '| | before | after |', '|---|---|---|');
   L.push(`| errors | ${count(plan.summary.issuesBefore, 'error')} | ${count(after, 'error')} |`, `| warnings | ${count(plan.summary.issuesBefore, 'warn')} | ${count(after, 'warn')} |`, '');
   const report = L.join('\n');

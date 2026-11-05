@@ -46,7 +46,7 @@ export interface QaResult {
 export function checkDraft(
   config: SiteConfig,
   d: Draft,
-  opts: { keyword: string; checkLink: (p: string) => LinkStatus; otherTitles: string[] },
+  opts: { keyword: string; checkLink: (p: string) => LinkStatus; otherTitles: string[]; originalWords?: number },
 ): QaResult {
   const qa = config.qa;
   const errors: string[] = [];
@@ -73,6 +73,9 @@ export function checkDraft(
   const words = countWords(d.body);
   if (words < qa.minWords) errors.push(`only ${words} words (min ${qa.minWords})`);
   if (words > qa.maxWords) warnings.push(`${words} words (max ${qa.maxWords})`);
+  // A refresh must not gut a page that already ranks.
+  if (opts.originalWords && words < opts.originalWords * config.safety.minRetainRatio)
+    errors.push(`refresh cut the article from ${opts.originalWords} to ${words} words; keep at least ${Math.round(opts.originalWords * config.safety.minRetainRatio)} (improve, don't shorten)`);
 
   const links = internalLinks(d.body, config.site);
   const bad = new Set<string>();
@@ -84,6 +87,22 @@ export function checkDraft(
   if (bad.size) errors.push(`invalid internal links: ${[...bad].join(', ')}`);
   const distinct = new Set(links.map((l) => l.path)).size;
   if (distinct < qa.minInternalLinks) errors.push(`only ${distinct} distinct internal links (min ${qa.minInternalLinks})`);
+
+  // External links: few, https only, never made up. Web pages can carry injected link spam.
+  const external = [...d.body.matchAll(/(?<!!)\[[^\]]+\]\((https?:\/\/[^)\s]+)\)/g)]
+    .map((m) => m[1])
+    .filter((u) => !internalLinks(`[x](${u})`, config.site).length);
+  if (external.length > config.safety.maxExternalLinks) errors.push(`${external.length} external links (max ${config.safety.maxExternalLinks})`);
+  const insecure = external.filter((u) => u.startsWith('http://'));
+  if (insecure.length) errors.push(`non-https external links: ${insecure.join(', ')}`);
+  const host = (u: string) => {
+    try {
+      return new URL(u).hostname;
+    } catch {
+      return u;
+    }
+  };
+  if (external.length) warnings.push(`external links to verify: ${[...new Set(external.map(host))].join(', ')}`);
 
   const lower = d.body.toLowerCase();
   const hits = FILLER.filter((p) => lower.includes(p));

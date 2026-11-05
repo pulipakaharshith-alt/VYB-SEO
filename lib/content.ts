@@ -126,21 +126,35 @@ export async function loadPosts(config: SiteConfig, ref?: string): Promise<{ pos
   return { posts, raw };
 }
 
-/** Build the full markdown file for a new or rewritten post. */
+/**
+ * Build the full markdown file for a new or rewritten post.
+ * With `existingRaw` (a refresh), every frontmatter field the post already has is kept (tags,
+ * images, authors, draft state…); only the fields the agent owns are updated, and `extra` only
+ * fills in fields that are missing, so a refresh can never unpublish or strip a live post.
+ */
 export function buildPostFile(
   config: SiteConfig,
   a: { slug: string; title: string; metaTitle: string; description: string; excerpt: string; body: string; keyword: string; published: string; updated: string },
+  existingRaw?: string,
 ): string {
   const f = config.frontmatter;
-  const data: Record<string, unknown> = {};
+  let existing: Record<string, unknown> = {};
+  if (existingRaw) {
+    try {
+      existing = { ...matter(existingRaw).data };
+    } catch {
+      existing = {};
+    }
+  }
+  const data: Record<string, unknown> = { ...existing };
   data[f.title] = a.title;
   if (f.metaTitle) data[f.metaTitle] = a.metaTitle;
   data[f.description] = a.description;
   if (f.excerpt) data[f.excerpt] = a.excerpt;
-  data[f.date] = a.published;
+  if (!existingRaw || data[f.date] == null) data[f.date] = a.published;
   if (f.updated) data[f.updated] = a.updated;
   if (f.keyword) data[f.keyword] = a.keyword;
-  Object.assign(data, f.extra);
+  for (const [k, v] of Object.entries(f.extra)) if (!(k in existing)) data[k] = v;
   if (f.schema) {
     const faq = extractFaq(a.body);
     if (faq.length) data[f.schema] = JSON.stringify(faqSchema(`${config.site}${postPath(config, a.slug)}`, faq), null, 2);
@@ -148,12 +162,24 @@ export function buildPostFile(
   return matter.stringify(`\n${a.body.trim()}\n`, data);
 }
 
+/** Re-parse a generated file and confirm it is valid before it is committed. */
+export function validatePostFile(config: SiteConfig, file: string, text: string): string[] {
+  const p = parsePost(config, file, text);
+  const errors: string[] = [];
+  if (p.parseError) errors.push(`generated frontmatter does not parse: ${p.parseError}`);
+  if (!p.title) errors.push('generated file has no title');
+  if (!p.description) errors.push('generated file has no description');
+  if (!p.published) errors.push('generated file has no date');
+  if (p.words < 200) errors.push('generated file body is nearly empty');
+  return errors;
+}
+
 // ── Similarity ───────────────────────────────────────────────────────────────
 
 const STOP = new Set(
   'a an the to for of on in and or with your you my me i is are be do does how what why when who which that this it at by from vs best top guide tips ways examples ideas'.split(' '),
 );
-const stem = (w: string) => w.replace(/(ies)$/, 'y').replace(/(ing|ers|er|es|s)$/, '');
+const stem = (w: string) => (w.length < 4 ? w : w.replace(/ies$/, 'y').replace(/([sxz]|ch|sh)es$/, '$1').replace(/([^su])s$/, '$1').replace(/(.{3,})ing$/, '$1'));
 
 export function tokens(s: string): string[] {
   return String(s ?? '')

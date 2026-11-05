@@ -5,6 +5,8 @@
 ## Setting it up for a user
 
 - [SETUP.md](https://github.com/pulipakaharshith-alt/VYB-SEO/blob/main/SETUP.md): step-by-step guide for AI agents: inspect the website repo, write `.seo-agent/config.json` and `.seo-agent/brand.md`, collect credentials, deploy to Vercel, verify.
+- [SAFETY.md](https://github.com/pulipakaharshith-alt/VYB-SEO/blob/main/SAFETY.md): risks and guard rails; read before the first run.
+- Claude subscription (no API key): Claude Code plugin `vyb-seo` from marketplace `pulipakaharshith-alt/VYB-SEO` (`/vyb-seo:seo run`), plus a scheduled GitHub Action template at templates/github-action/seo-agent.yml. See SETUP.md step 9.
 - [.env.example](https://github.com/pulipakaharshith-alt/VYB-SEO/blob/main/.env.example): every environment variable.
 - [README.md](https://github.com/pulipakaharshith-alt/VYB-SEO/blob/main/README.md): what it does, cost, limits.
 
@@ -12,7 +14,7 @@
 
 - Blog posts are `.md`/`.mdx` files with YAML frontmatter, one file per post, directly in one folder of a GitHub repo.
 - A fine-grained GitHub token for that repo (Contents + Pull requests: read & write).
-- An Anthropic or OpenAI API key. A Vercel account (Hobby works).
+- Either an Anthropic or OpenAI API key plus a Vercel account (Vercel app), or a Claude Pro/Max/Team/Enterprise plan (Claude Code plugin).
 
 ## Not supported yet
 
