@@ -7,7 +7,21 @@ Anthropic **or** OpenAI API key. No database, no account, nothing hosted by anyo
 [![Deploy with Vercel](https://vercel.com/button)](https://vercel.com/new/clone?repository-url=https%3A%2F%2Fgithub.com%2Fpulipakaharshith-alt%2FVYB-SEO&env=GITHUB_REPO,GITHUB_TOKEN,DASHBOARD_PASSWORD,CRON_SECRET&envDescription=Your%20content%20repo%2C%20a%20token%20that%20can%20push%20to%20it%2C%20a%20dashboard%20password%20and%20a%20random%20cron%20secret.%20Add%20ANTHROPIC_API_KEY%20or%20OPENAI_API_KEY%20after%20deploying.&envLink=https%3A%2F%2Fgithub.com%2Fpulipakaharshith-alt%2FVYB-SEO%23setup&project-name=seo-agent)
 
 It works with any site whose blog is Markdown or MDX in a GitHub repo: Next.js, Astro, Hugo, Eleventy,
-Docusaurus, Jekyll and so on.
+Docusaurus and so on.
+
+## Set it up with your AI agent
+
+Open your **website's** repo in Claude Code, Cursor, Codex or any coding agent and paste:
+
+```
+Set up the SEO agent from https://github.com/pulipakaharshith-alt/VYB-SEO for this website.
+Follow its SETUP.md: inspect this repo, write .seo-agent/config.json and .seo-agent/brand.md,
+commit them, then walk me through deploying it to Vercel.
+```
+
+The agent reads your blog, works out the folder, URL pattern and frontmatter fields, drafts your brand
+notes from your site's own copy, and commits the settings. You then create a GitHub token and an AI key
+and deploy. Prefer doing it by hand? Follow [SETUP.md](SETUP.md) yourself, or the short version below.
 
 ## What it does every day
 

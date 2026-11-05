@@ -1,0 +1,19 @@
+# VYB-SEO
+
+> Open-source AI SEO agent for websites whose blog is Markdown/MDX in a GitHub repo. Deployed to Vercel with the user's own Anthropic or OpenAI key. Daily, it audits posts, fixes mechanical issues, researches keywords (Google Autocomplete + Search Console), refreshes pages near page one, rewrites low-CTR titles, writes new articles behind a quality gate, adds internal links, and opens a pull request. Settings live in `.seo-agent/` in the user's website repo.
+
+## Setting it up for a user
+
+- [SETUP.md](https://github.com/pulipakaharshith-alt/VYB-SEO/blob/main/SETUP.md): step-by-step guide for AI agents: inspect the website repo, write `.seo-agent/config.json` and `.seo-agent/brand.md`, collect credentials, deploy to Vercel, verify.
+- [.env.example](https://github.com/pulipakaharshith-alt/VYB-SEO/blob/main/.env.example): every environment variable.
+- [README.md](https://github.com/pulipakaharshith-alt/VYB-SEO/blob/main/README.md): what it does, cost, limits.
+
+## Requirements
+
+- Blog posts are `.md`/`.mdx` files with YAML frontmatter, one file per post, directly in one folder of a GitHub repo.
+- A fine-grained GitHub token for that repo (Contents + Pull requests: read & write).
+- An Anthropic or OpenAI API key. A Vercel account (Hobby works).
+
+## Not supported yet
+
+CMS-hosted blogs (WordPress, Webflow, Ghost), nested post folders, TOML frontmatter, date-prefixed file names (Jekyll `_posts`).
