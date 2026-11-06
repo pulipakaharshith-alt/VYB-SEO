@@ -41,6 +41,8 @@ const DEFAULTS = {
   run: { newArticles: 1, refreshes: 1, metaRewrites: 2, research: true, maxSpendUsd: 5 },
   qa: { minWords: 1200, maxWords: 4500, minInternalLinks: 3, metaTitleMax: 60, metaDescriptionMin: 110, metaDescriptionMax: 160, maxFillerPhrases: 2, staleDays: 240, cannibalizationThreshold: 0.6 },
   research: { hl: 'en', gl: 'us', seeds: [], modifiers: ['', 'how to', 'best', 'what is', 'for', 'vs', 'examples', 'free'], picksPerRun: 10 },
+  // Used by the Vercel app only (DATAFORSEO_API_KEY); kept here so both read the same config.
+  dataforseo: { locationCode: 2840, languageCode: 'en', keywordMetrics: true, minSearchVolume: 10, rankingsFallback: true, aiVisibility: { enabled: true, prompts: [], brandTerms: [], platforms: ['chat_gpt', 'perplexity'], everyDays: 7 } },
 };
 
 const FILLER = ["in today's", 'delve', 'game-changer', 'game changer', 'unlock', 'elevate your', 'navigate the world', 'navigating the world', "it's important to note", 'it is important to note', 'in conclusion', 'in the realm of', 'tapestry', 'look no further', "whether you're", 'whether you’re', 'embark on', 'supercharge', 'seamless'];

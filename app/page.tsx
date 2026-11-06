@@ -25,6 +25,7 @@ export default async function Overview({ searchParams }: PageProps<'/'>) {
     { ok: access.ok, label: 'GitHub repo', detail: access.detail },
     { ok: Boolean(env.cronSecret), label: 'Daily schedule', detail: env.cronSecret ? 'CRON_SECRET set; runs daily via Vercel Cron' : 'set CRON_SECRET' },
     { ok: googleConfigured(), label: 'Search Console', detail: googleConfigured() ? 'connected' : 'optional: lets the agent pick pages by ranking opportunity', optional: true },
+    { ok: Boolean(env.dataforseoKey), label: 'DataForSEO', detail: env.dataforseoKey ? 'connected: keyword volumes, rankings, AI visibility' : 'optional: real search volumes, rankings and AI-answer tracking (pay per use)', optional: true },
     { ok: Boolean(env.indexNowKey), label: 'IndexNow', detail: env.indexNowKey ? 'key set' : 'optional: instant Bing/Yandex indexing', optional: true },
   ];
 
@@ -46,6 +47,7 @@ export default async function Overview({ searchParams }: PageProps<'/'>) {
   });
   if (!r.ok) return <ErrorBox error={r.error} />;
   const { ctx, state, pulls, postCount, pending, status, monthSpend } = r.data;
+  const ai = state.aiVisibility[0];
 
   return (
     <div className="space-y-6">
@@ -124,6 +126,34 @@ export default async function Overview({ searchParams }: PageProps<'/'>) {
           )}
         </Card>
       </div>
+
+      {ai && (
+        <Card title={`AI visibility · ${ai.date}`}>
+          <p className="mb-3 text-sm">
+            Mentioned in <strong>{ai.results.filter((x) => x.mentioned).length}</strong> of {ai.results.length} AI answers; your site cited in{' '}
+            <strong>{ai.results.filter((x) => x.cited).length}</strong>.
+            {state.aiVisibility[1] && (
+              <span className="text-muted">
+                {' '}
+                Previous check ({state.aiVisibility[1].date}): {state.aiVisibility[1].results.filter((x) => x.mentioned).length} of {state.aiVisibility[1].results.length}.
+              </span>
+            )}
+          </p>
+          <ul className="space-y-3 text-sm">
+            {ai.results.map((x, i) => (
+              <li key={i}>
+                <div className="flex flex-wrap items-center gap-2">
+                  <Badge tone={x.mentioned ? 'ok' : 'bad'}>{x.mentioned ? 'mentioned' : 'not mentioned'}</Badge>
+                  {x.cited && <Badge tone="ok">cited</Badge>}
+                  <span className="text-muted">{x.platform}</span>
+                  <span className="font-medium">{x.prompt}</span>
+                </div>
+                {x.excerpt && <p className="mt-1 text-xs text-muted">“{x.excerpt}”</p>}
+              </li>
+            ))}
+          </ul>
+        </Card>
+      )}
 
       <Card title="Recent runs" actions={<Link href="/reports" className="text-sm text-accent">Reports →</Link>}>
         {state.runs.length ? (
