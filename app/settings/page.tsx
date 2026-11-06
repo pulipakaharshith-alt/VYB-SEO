@@ -42,6 +42,7 @@ export default async function SettingsPage({ searchParams }: PageProps<'/setting
               <li><code>publish.mode</code>: &quot;pr&quot; (review first) or &quot;direct&quot;. <code>run</code>: how much each run does and the spend cap.</li>
               <li><code>research.seeds</code>: topics to expand through Google Autocomplete into new keywords.</li>
               <li><code>safety</code>: guard rails (weekly post limit, protected top pages, refresh shrink limit, claims check, external link limit). See <a href="/guide" className="underline">Dos &amp; don&apos;ts</a>.</li>
+              <li><code>dataforseo</code>: used only with <code>DATAFORSEO_API_KEY</code>. Location (2840 US, 2356 India), minimum search volume, and <code>aiVisibility.prompts</code>: questions to ask ChatGPT and Perplexity weekly to see if they mention you.</li>
             </ul>
           </details>
         </Card>

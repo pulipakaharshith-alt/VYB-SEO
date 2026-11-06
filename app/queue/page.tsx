@@ -43,6 +43,7 @@ export default async function QueuePage({ searchParams }: PageProps<'/queue'>) {
                 <div className="min-w-0 flex-1">
                   <div className="font-medium">{k.keyword}</div>
                   <div className="truncate text-xs text-muted">
+                    {k.volume != null ? `${k.volume.toLocaleString()}/mo${k.difficulty != null ? ` · KD ${k.difficulty}` : ''} · ` : ''}
                     {k.title}
                     {k.why ? ` · ${k.why}` : ''}
                     {k.source ? ` · ${k.source}` : ''}

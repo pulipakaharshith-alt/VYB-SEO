@@ -70,6 +70,23 @@ AI content at scale can hurt a site. The defaults are deliberately conservative:
 9. **Publish** as a pull request you merge (default) or straight to your branch, with a report.
    Once the URLs are live, it notifies IndexNow and Google.
 
+### Optional: DataForSEO (the data behind OpenSEO)
+
+Add `DATAFORSEO_API_KEY` and the agent also uses:
+
+- **Real keyword data:** monthly search volume, keyword difficulty and intent for every research candidate.
+  Low-demand queries are dropped, and the planner prefers real demand with low difficulty.
+- **Rankings without Search Console:** what your domain ranks for and where. It picks refreshes from posts at
+  positions 4–20 and protects the ones already in the top 3.
+- **AI visibility:** once a week it asks ChatGPT and Perplexity your questions (`dataforseo.aiVisibility.prompts`,
+  e.g. "What is <your product>?"). It records whether you're mentioned and whether your site is cited, and shows
+  the trend on the dashboard and in each report.
+
+DataForSEO is pay-as-you-go (new accounts get $1 of free credit). Every call's cost counts toward the run's spend
+cap. Endpoints and model names follow [OpenSEO](https://github.com/every-app/open-seo) (MIT), an open-source
+Semrush/Ahrefs alternative built on DataForSEO. If you want full keyword-research, backlink and rank-tracking
+dashboards, run OpenSEO alongside this agent.
+
 ### Quality gate
 
 Every article has to pass, or it isn't published:
@@ -118,6 +135,7 @@ your-website/                    ← the repo GITHUB_REPO points at
    | `DASHBOARD_PASSWORD` | yes | protects the dashboard and its actions |
    | `CRON_SECRET` | yes | random string (`openssl rand -hex 32`); Vercel Cron uses it to start the daily run |
    | `GOOGLE_SERVICE_ACCOUNT_EMAIL`, `GOOGLE_PRIVATE_KEY` | no | Search Console data and Google indexing pings |
+   | `DATAFORSEO_API_KEY` | no | real keyword volumes and difficulty, rankings, weekly AI-visibility checks (pay per use) |
    | `INDEXNOW_KEY` | no | Bing/Yandex instant indexing; your site must serve `/<key>.txt` |
 
    The full list, including model and price overrides, is in [`.env.example`](.env.example).

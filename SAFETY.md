@@ -77,6 +77,7 @@ token from `claude setup-token` also expires after a year), and revoke both if y
 | Spend cap | **Enforced** (Vercel app): each run stops at `run.maxSpendUsd` (default $5) and publishes what it finished. |
 | Visibility | The dashboard shows spend per run and per month; reports show it per step. |
 | Pause | Set `AGENT_PAUSED=1` in Vercel to stop the daily run without removing anything. |
+| DataForSEO | **Enforced.** Every DataForSEO call's reported cost is added to the run's spend and stops it at the cap. AI-visibility checks run at most every `everyDays` (default 7), up to 10 prompts. AI-answer calls are never retried, because a retry could be billed twice. |
 
 **Claude subscription mode** doesn't bill per token, but runs count against your plan's usage limits. The
 scheduled Action runs twice a week by default for that reason.

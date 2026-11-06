@@ -38,6 +38,9 @@ export function riskySettings(c: SiteConfig): string[] {
   if (c.qa.minWords < 600) out.push(`qa.minWords is ${c.qa.minWords}: short pages rarely answer a query well enough to rank.`);
   if (c.qa.maxFillerPhrases > 4) out.push('qa.maxFillerPhrases is high: AI filler phrases will get through.');
   if (c.run.newArticles > 5) out.push(`run.newArticles is ${c.run.newArticles} per run: keep it at 1–2 (the weekly cap still applies).`);
+  const ai = c.dataforseo.aiVisibility;
+  if (ai.enabled && ai.prompts.length * ai.platforms.length > 20) out.push(`AI visibility asks ${ai.prompts.length} prompts × ${ai.platforms.length} platforms = ${ai.prompts.length * ai.platforms.length} paid calls per check (max 10 prompts are used). Trim to your most important questions.`);
+  if (ai.enabled && ai.everyDays < 3) out.push(`dataforseo.aiVisibility.everyDays is ${ai.everyDays}: AI answers rarely change daily; weekly is enough and costs less.`);
   if (c.run.maxSpendUsd > 20) out.push(`run.maxSpendUsd is $${c.run.maxSpendUsd}: a single run can spend that much.`);
   return out;
 }

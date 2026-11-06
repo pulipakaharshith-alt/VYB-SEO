@@ -17,6 +17,7 @@ import {
   postPath,
   postUrl,
   type AgentState,
+  type AiVisibilityResult,
   type QueueItem,
 } from '@/lib/config';
 import { buildPostFile, closestPost, loadPosts, parsePost, relatedPosts, splitRaw, validatePostFile, type PostInfo } from '@/lib/content';
@@ -24,6 +25,7 @@ import { env } from '@/lib/env';
 import { agentPulls, changedOnBranch, commitFiles, createBranch, deleteBranch, mergeAndDelete, openPull, pullFiles, readFile } from '@/lib/github';
 import { linkChecker, sitemapPaths } from '@/lib/links';
 import { research } from '@/lib/research';
+import { dataforseoConfigured, llmAnswer, rankedKeywords, type LlmSlug, type Ranking } from '@/lib/dataforseo';
 import { isLive, pingGoogle, pingIndexNow, searchConsole, type GscData } from '@/lib/search';
 import { addLink, draftArticle, newArticlePrompt, refreshPrompt, rewriteMeta, serpBrief } from '@/lib/writer';
 
@@ -53,10 +55,11 @@ export interface Plan {
   ping: { pulls: number[]; urls: string[] };
   summary: {
     paced: string | null;
+    dataNotes: string[];
     issuesBefore: { code: string; severity: string; count: number }[];
     fixed: Record<string, number>;
     fixedFiles: number;
-    researched: { keyword: string; title: string; priority?: number; why?: string }[];
+    researched: { keyword: string; title: string; priority?: number; why?: string; volume?: number | null; difficulty?: number | null }[];
     gsc: GscData['totals'] | null;
     gscRange: GscData['range'] | null;
   };
@@ -75,6 +78,22 @@ export interface StepResult {
   linkedFrom?: string[];
   post?: PostInfo;
   usd: number;
+}
+
+/** Shape DataForSEO rankings like Search Console data so refresh selection can use either. */
+function rankingsAsSignals(rankings: Ranking[], slugOf: (url: string) => string | null): GscData {
+  const onPosts = rankings.map((r) => ({ ...r, slug: slugOf(r.url) })).filter((r) => r.slug);
+  return {
+    range: { startDate: '', endDate: '' },
+    totals: { clicks: 0, impressions: 0, prevClicks: 0 },
+    striking: onPosts
+      .filter((r) => r.position >= 4 && r.position <= 20)
+      .map((r) => ({ slug: r.slug, url: r.url, query: r.keyword, impressions: r.volume, position: r.position })),
+    lowCtr: [],
+    decaying: [],
+    topPages: [...new Set(onPosts.filter((r) => r.position <= 3).sort((a, b) => b.volume - a.volume).map((r) => r.slug as string))],
+    queries: [],
+  };
 }
 
 async function saveBookkeeping(files: { queue?: QueueItem[]; state?: AgentState; extra?: Record<string, string> }, message: string) {
@@ -141,13 +160,29 @@ export async function prepareRun(input: RunInput & { runId: string }): Promise<P
     console.warn('Search Console unavailable:', (e as Error).message);
   }
 
+  // No Search Console? DataForSEO rankings (as in OpenSEO) stand in for picking refresh targets.
+  const dataNotes: string[] = [];
+  let dataUsd = 0;
+  let signals: GscData | null = gsc;
+  if (!gsc && dataforseoConfigured() && config.dataforseo.rankingsFallback) {
+    try {
+      const r = await rankedKeywords(new URL(config.site).hostname.replace(/^www\./, ''), config.dataforseo);
+      dataUsd += r.cost;
+      signals = rankingsAsSignals(r.rankings, slugOf);
+      dataNotes.push(`rankings from DataForSEO: ${r.rankings.length} keywords, ${signals.striking.length} at positions 4-20 on posts`);
+    } catch (e) {
+      dataNotes.push(`DataForSEO rankings unavailable: ${(e as Error).message}`);
+    }
+  }
+
   let researchUsd = 0;
   let researched: QueueItem[] = [];
   if (config.run.research) {
     try {
       const r = await research(ctx, index, queue, gsc);
       researched = r.added;
-      researchUsd = usd(r.usage);
+      researchUsd = usd(r.usage) + r.dataUsd;
+      if (r.metricsNote) dataNotes.push(r.metricsNote);
       queue.push(...r.added);
     } catch (e) {
       console.warn('research failed:', (e as Error).message);
@@ -161,20 +196,21 @@ export async function prepareRun(input: RunInput & { runId: string }): Promise<P
   };
   const slugs = new Set(index.map((p) => p.slug));
   // Never rewrite the pages that already earn the most clicks: the downside outweighs the upside.
-  const protectedPages = new Set(gsc?.topPages.slice(0, config.safety.protectTopPages) ?? []);
+  const protectedPages = new Set(signals?.topPages.slice(0, config.safety.protectTopPages) ?? []);
   const okRefresh = (s: string | null): s is string =>
     Boolean(s && slugs.has(s) && !protectedPages.has(s) && !recent(state.refreshed, s, 75));
 
   let refresh: Plan['refresh'] = [];
-  if (gsc) {
+  if (signals) {
+    const sig = signals;
     const score = new Map<string, number>();
     const why = new Map<string, string>();
-    for (const s of gsc.striking) {
+    for (const s of sig.striking) {
       if (!okRefresh(s.slug)) continue;
       score.set(s.slug, (score.get(s.slug) ?? 0) + (s.impressions * (21 - s.position)) / 16);
       if (!why.has(s.slug)) why.set(s.slug, `"${s.query}" at #${s.position.toFixed(0)}`);
     }
-    for (const d of gsc.decaying) {
+    for (const d of sig.decaying) {
       if (!okRefresh(d.slug)) continue;
       score.set(d.slug, (score.get(d.slug) ?? 0) + (d.prevClicks - d.clicks) * 20);
       why.set(d.slug, `clicks down ${d.prevClicks} → ${d.clicks}`);
@@ -182,13 +218,13 @@ export async function prepareRun(input: RunInput & { runId: string }): Promise<P
     refresh = [...score.entries()]
       .sort((a, b) => b[1] - a[1])
       .slice(0, n.refresh)
-      .map(([slug]) => ({ slug, reason: why.get(slug)!, queries: gsc!.striking.filter((x) => x.slug === slug).slice(0, 15).map(({ query, impressions, position }) => ({ query, impressions, position })) }));
+      .map(([slug]) => ({ slug, reason: why.get(slug)!, queries: sig.striking.filter((x) => x.slug === slug).slice(0, 15).map(({ query, impressions, position }) => ({ query, impressions, position })) }));
   } else {
     refresh = index
       .filter((p) => okRefresh(p.slug) && p.updated)
       .sort((a, b) => new Date(a.updated).getTime() - new Date(b.updated).getTime())
       .slice(0, n.refresh)
-      .map((p) => ({ slug: p.slug, reason: `oldest content (updated ${p.updated}); no Search Console data`, queries: [] }));
+      .map((p) => ({ slug: p.slug, reason: `oldest content (updated ${p.updated}); no ranking data`, queries: [] }));
   }
 
   const metas: Plan['metas'] = (gsc?.lowCtr ?? [])
@@ -231,11 +267,12 @@ export async function prepareRun(input: RunInput & { runId: string }): Promise<P
       issuesBefore,
       fixed: fixes.counts,
       fixedFiles: Object.keys(fixes.files).length,
-      researched: researched.map(({ keyword, title, priority, why }) => ({ keyword, title, priority, why })),
+      researched: researched.map(({ keyword, title, priority, why, volume, difficulty }) => ({ keyword, title, priority, why, volume, difficulty })),
+      dataNotes,
       gsc: gsc?.totals ?? null,
       gscRange: gsc?.range ?? null,
     },
-    usd: researchUsd,
+    usd: researchUsd + dataUsd,
   };
 }
 
@@ -378,9 +415,65 @@ export async function interlinkArticle(a: { branch: string; target: PostInfo; in
 }
 interlinkArticle.maxRetries = 1;
 
+// ── AI visibility: what ChatGPT / Perplexity say about you (weekly) ─────────────
+
+const escapeRe = (s: string) => s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+
+export async function checkAiVisibility(a: { date: string; budgetUsd: number }): Promise<{ results: AiVisibilityResult[]; usd: number; note: string | null }> {
+  'use step';
+  const { config } = await loadContext();
+  const v = config.dataforseo.aiVisibility;
+  if (!dataforseoConfigured() || !v.enabled || !v.prompts.length) return { results: [], usd: 0, note: null };
+  const state = await loadState();
+  const last = state.aiVisibility[0]?.date;
+  if (last && (Date.now() - new Date(last).getTime()) / 864e5 < v.everyDays) return { results: [], usd: 0, note: null };
+
+  const host = new URL(config.site).hostname.replace(/^www\./, '');
+  const terms = (v.brandTerms.length ? v.brandTerms : [host.split('.')[0]]).filter(Boolean);
+  const mentionRe = new RegExp(`\\b(${terms.map(escapeRe).join('|')})\\b`, 'i');
+  const results: AiVisibilityResult[] = [];
+  const errors: string[] = [];
+  let spent = 0;
+  for (const prompt of v.prompts.slice(0, 10)) {
+    for (const platform of v.platforms as LlmSlug[]) {
+      if (spent >= a.budgetUsd) {
+        errors.push('stopped at the spend cap');
+        break;
+      }
+      try {
+        const ans = await llmAnswer(platform, prompt);
+        spent += ans.cost;
+        const m = ans.text.match(mentionRe);
+        const at = m?.index ?? 0;
+        results.push({
+          platform,
+          prompt,
+          mentioned: Boolean(m),
+          cited: ans.citations.some((u) => {
+            try {
+              return new URL(u).hostname.replace(/^www\./, '').endsWith(host);
+            } catch {
+              return false;
+            }
+          }),
+          excerpt: ans.text.slice(Math.max(0, at - 80), at + 220).replace(/\s+/g, ' ').trim(),
+        });
+      } catch (e) {
+        spent += (e as { costUsd?: number }).costUsd ?? 0;
+        errors.push(`${platform}: ${(e as Error).message}`);
+      }
+    }
+  }
+  if (results.length) {
+    state.aiVisibility = [{ date: a.date, results }, ...state.aiVisibility].slice(0, 26);
+    await saveBookkeeping({ state }, `SEO agent: AI visibility ${a.date}`);
+  }
+  return { results, usd: spent, note: errors.length ? errors.join('; ') : null };
+}
+
 // ── 3. Finish: report, open the PR (or merge), update the queue and state ────────
 
-export async function finishRun(a: { plan: Omit<Plan, 'index' | 'sitemap'>; results: StepResult[]; usd: number; stopped: string | null }): Promise<{ prUrl?: string; directUrls: string[]; report: string }> {
+export async function finishRun(a: { plan: Omit<Plan, 'index' | 'sitemap'>; results: StepResult[]; usd: number; stopped: string | null; ai?: { results: AiVisibilityResult[]; note: string | null } }): Promise<{ prUrl?: string; directUrls: string[]; report: string }> {
   'use step';
   const ctx = await loadContext();
   const { config } = ctx;
@@ -426,9 +519,18 @@ export async function finishRun(a: { plan: Omit<Plan, 'index' | 'sitemap'>; resu
     for (const r of fails) L.push(`- ${r.kind} ${r.slug}: ${r.errors?.join('; ')}`);
     L.push('');
   }
+  if (a.ai?.results.length) {
+    const r = a.ai.results;
+    L.push('## AI visibility', '', `Mentioned in **${r.filter((x) => x.mentioned).length} of ${r.length}** AI answers; your site cited in ${r.filter((x) => x.cited).length}.`, '');
+    L.push('| Assistant | Question | Mentioned | Cited |', '|---|---|---|---|');
+    for (const x of r) L.push(`| ${x.platform} | ${x.prompt.replace(/\|/g, '/')} | ${x.mentioned ? '✅' : '❌'} | ${x.cited ? '✅' : '—'} |`);
+    L.push('');
+  }
+  if (a.ai?.note) L.push(`_AI visibility: ${a.ai.note}_`, '');
+  if (plan.summary.dataNotes?.length) L.push('## Data', '', ...plan.summary.dataNotes.map((n) => `- ${n}`), '');
   if (plan.summary.researched.length) {
     L.push('## Newly queued keywords', '');
-    for (const k of plan.summary.researched) L.push(`- [${k.priority}] **${k.keyword}**: ${k.title}${k.why ? ` _(${k.why})_` : ''}`);
+    for (const k of plan.summary.researched) L.push(`- [${k.priority}] **${k.keyword}**${k.volume != null ? ` (${k.volume}/mo${k.difficulty != null ? `, KD ${k.difficulty}` : ''})` : ''}: ${k.title}${k.why ? ` _(${k.why})_` : ''}`);
     L.push('');
   }
   L.push('## Before you merge', '', '- Read each new or refreshed article: facts, tone, advice.', '- Check every external link opens and is reputable.', '- Open the preview deployment and confirm the posts render.', '- Anything wrong? Edit it in this PR, or close the PR to discard the run.', '');
