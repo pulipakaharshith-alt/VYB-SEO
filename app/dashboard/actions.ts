@@ -25,7 +25,7 @@ export async function runNow(form: FormData) {
       metaRewrites: int(form.get('metaRewrites'), 0, 20),
     },
   ]);
-  redirect(`/?run=${encodeURIComponent(run.runId)}`);
+  redirect(`/dashboard?run=${encodeURIComponent(run.runId)}`);
 }
 
 export async function saveSettings(form: FormData) {
@@ -35,28 +35,28 @@ export async function saveSettings(form: FormData) {
   try {
     parsed = JSON.parse(configText);
   } catch (e) {
-    redirect(`/settings?error=${encodeURIComponent(`Config is not valid JSON: ${(e as Error).message}`)}`);
+    redirect(`/dashboard/settings?error=${encodeURIComponent(`Config is not valid JSON: ${(e as Error).message}`)}`);
   }
-  if (!parsed.site || !/^https?:\/\//.test(parsed.site)) redirect(`/settings?error=${encodeURIComponent('"site" must be your full URL, e.g. https://example.com')}`);
-  if (!parsed.contentDir) redirect(`/settings?error=${encodeURIComponent('"contentDir" is required')}`);
-  if (!parsed.urlPattern?.includes('{slug}')) redirect(`/settings?error=${encodeURIComponent('"urlPattern" must contain {slug}')}`);
+  if (!parsed.site || !/^https?:\/\//.test(parsed.site)) redirect(`/dashboard/settings?error=${encodeURIComponent('"site" must be your full URL, e.g. https://example.com')}`);
+  if (!parsed.contentDir) redirect(`/dashboard/settings?error=${encodeURIComponent('"contentDir" is required')}`);
+  if (!parsed.urlPattern?.includes('{slug}')) redirect(`/dashboard/settings?error=${encodeURIComponent('"urlPattern" must contain {slug}')}`);
   await commitFiles(
     { [PATHS.config]: JSON.stringify(parsed, null, 2) + '\n', [PATHS.brand]: brand.trim() + '\n' },
     'SEO agent: update settings',
   );
-  revalidatePath('/', 'layout');
-  redirect('/settings?saved=1');
+  revalidatePath('/dashboard', 'layout');
+  redirect('/dashboard/settings?saved=1');
 }
 
 export async function createDefaults() {
   await commitFiles({ [PATHS.config]: JSON.stringify(DEFAULT_CONFIG, null, 2) + '\n' }, 'SEO agent: initial settings');
-  revalidatePath('/', 'layout');
-  redirect('/settings');
+  revalidatePath('/dashboard', 'layout');
+  redirect('/dashboard/settings');
 }
 
 async function saveQueue(queue: QueueItem[], message: string) {
   await commitFiles({ [PATHS.queue]: JSON.stringify(queue, null, 2) + '\n' }, message);
-  revalidatePath('/queue');
+  revalidatePath('/dashboard/queue');
 }
 
 export async function addKeyword(form: FormData) {
@@ -65,7 +65,7 @@ export async function addKeyword(form: FormData) {
   if (!keyword) return;
   const queue = await loadQueue();
   const slug = slugify(title);
-  if (!slug || queue.some((k) => k.slug === slug)) redirect(`/queue?error=${encodeURIComponent('That keyword is already queued')}`);
+  if (!slug || queue.some((k) => k.slug === slug)) redirect(`/dashboard/queue?error=${encodeURIComponent('That keyword is already queued')}`);
   queue.push({ slug, keyword, title, priority: int(form.get('priority'), 1, 100) ?? 70, source: 'manual', status: 'pending', addedAt: new Date().toISOString() });
   await saveQueue(queue, `SEO agent: queue "${keyword}"`);
 }

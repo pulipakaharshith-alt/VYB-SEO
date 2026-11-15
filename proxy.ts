@@ -6,6 +6,11 @@ import { NextResponse, type NextRequest } from 'next/server';
  * CRON_SECRET itself, and Workflow's internal routes are excluded from the matcher.
  */
 export function proxy(request: NextRequest) {
+  // The landing page is public: only a plain GET/HEAD of "/". Any other method on "/" (a server
+  // action POST, for example) still needs the password, like every /dashboard route.
+  if (request.nextUrl.pathname === '/' && (request.method === 'GET' || request.method === 'HEAD')) {
+    return NextResponse.next();
+  }
   const password = process.env.DASHBOARD_PASSWORD;
   if (!password) {
     return new NextResponse('Set DASHBOARD_PASSWORD in your Vercel project settings, then redeploy.', { status: 503 });

@@ -219,7 +219,7 @@ Optional variables (Search Console, IndexNow, model and price overrides) are lis
 
 ## 8. Verify and first run
 
-1. Open the deployment URL. Log in with any username and the dashboard password.
+1. Open `<deployment URL>/dashboard`. Log in with any username and the dashboard password. (`/` is a public landing page.)
 2. Read the **Dos & don’ts** page in the dashboard with the user. If the Overview shows **Risky settings**, go through each one.
 3. **Overview** shows a setup checklist: everything required should be ✓. If "GitHub repo" fails, the token
    lacks access or permissions.

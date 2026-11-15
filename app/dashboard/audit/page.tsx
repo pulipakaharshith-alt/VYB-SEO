@@ -7,7 +7,7 @@ import { linkChecker, sitemapPaths } from '@/lib/links';
 
 export const maxDuration = 300;
 
-export default async function AuditPage({ searchParams }: PageProps<'/audit'>) {
+export default async function AuditPage({ searchParams }: PageProps<'/dashboard/audit'>) {
   const sp = await searchParams;
   const r = await attempt(async () => {
     const { config } = await loadContext();
@@ -37,7 +37,7 @@ export default async function AuditPage({ searchParams }: PageProps<'/audit'>) {
           </ul>
         </details>
       </Card>
-      <Card title="Live site" actions={!live && <Link href="/audit?live=1" className="text-sm text-accent">Crawl sitemap →</Link>}>
+      <Card title="Live site" actions={!live && <Link href="/dashboard/audit?live=1" className="text-sm text-accent">Crawl sitemap →</Link>}>
         {live ? (
           <>
             <p className="mb-4 text-sm text-muted">{live.ok} of {live.checked} sitemap URLs return 200.</p>
