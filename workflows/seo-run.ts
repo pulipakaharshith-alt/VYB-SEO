@@ -1,5 +1,6 @@
 import { getWorkflowMetadata, sleep } from 'workflow';
 import {
+  checkAiVisibility,
   finishRun,
   interlinkArticle,
   pingLive,
@@ -45,6 +46,15 @@ export async function seoRun(input: RunInput) {
     } catch {
       // Pinging is best-effort; the sitemap still tells search engines.
     }
+  }
+
+  // Weekly check of what AI assistants say about the site (skips itself between checks).
+  let ai: Awaited<ReturnType<typeof checkAiVisibility>> | undefined;
+  try {
+    ai = await checkAiVisibility({ date: plan.date, budgetUsd: Math.max(0, plan.maxSpendUsd - usd) });
+    usd += ai.usd;
+  } catch (e) {
+    ai = { results: [], usd: 0, note: e instanceof Error ? e.message : String(e) };
   }
 
   for (const target of plan.refresh) {
@@ -94,7 +104,7 @@ export async function seoRun(input: RunInput) {
     results.push({ ...r, post: undefined });
   }
 
-  const done = await finishRun({ plan: lite, results, usd, stopped });
+  const done = await finishRun({ plan: lite, results, usd, stopped, ai: ai && { results: ai.results, note: ai.note } });
 
   // Direct mode publishes right away: give the site time to deploy, then notify search engines.
   if (done.directUrls.length) {

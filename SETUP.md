@@ -282,6 +282,10 @@ Scheduled workflows on public repos pause after 60 days without repo activity.
   that get impressions but no clicks. Create a Google Cloud service account, enable *Google Search Console API*,
   create a JSON key, add the service account email as a user (Restricted) on the Search Console property, and set
   `GOOGLE_SERVICE_ACCOUNT_EMAIL` and `GOOGLE_PRIVATE_KEY` (the key's `private_key` value) in Vercel.
+- **DataForSEO:** set `DATAFORSEO_API_KEY` (the "Base64" credential at app.dataforseo.com/api-access). In
+  `.seo-agent/config.json`, set `dataforseo.locationCode` (2840 US, 2356 India, 2826 UK) and add
+  `dataforseo.aiVisibility.prompts` (3–5 questions people ask AI about your category or brand) and `brandTerms`
+  (your brand and domain). Each AI check costs one call per prompt per platform, once a week by default.
 - **IndexNow (Bing, Yandex):** pick a random 32-character key, set `INDEXNOW_KEY`, and add a file
   `<key>.txt` containing the key to the website's public folder so it's served at `https://site/<key>.txt`.
 - **Pause:** set `AGENT_PAUSED=1` in Vercel to stop the daily run.

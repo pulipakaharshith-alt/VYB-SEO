@@ -89,6 +89,14 @@ export const env = {
   get gscSite() {
     return read('GSC_SITE_URL');
   },
+  /** DataForSEO "Base64" credential (email:password, base64-encoded). Optional. */
+  get dataforseoKey() {
+    return read('DATAFORSEO_API_KEY');
+  },
+  /** Override for testing, e.g. https://sandbox.dataforseo.com (free, fake data). */
+  get dataforseoApi() {
+    return read('DATAFORSEO_API_URL') ?? 'https://api.dataforseo.com';
+  },
   get indexNowKey() {
     return read('INDEXNOW_KEY');
   },

@@ -85,6 +85,28 @@ export interface SiteConfig {
     modifiers: string[];
     picksPerRun: number;
   };
+  /** Used only when DATAFORSEO_API_KEY is set. */
+  dataforseo: {
+    /** DataForSEO location code (2840 = United States, 2356 = India, 2826 = UK). */
+    locationCode: number;
+    languageCode: string;
+    /** Real search volumes and difficulty for keyword research. */
+    keywordMetrics: boolean;
+    /** Drop research candidates below this monthly search volume (0 keeps everything). */
+    minSearchVolume: number;
+    /** Use DataForSEO rankings to pick refresh targets when Search Console isn't connected. */
+    rankingsFallback: boolean;
+    aiVisibility: {
+      enabled: boolean;
+      /** Questions to ask AI assistants, e.g. "What is <brand>?" or "best <category> app". */
+      prompts: string[];
+      /** Words that count as a mention of you (brand, product, domain). */
+      brandTerms: string[];
+      platforms: ('chat_gpt' | 'perplexity' | 'claude')[];
+      /** Days between checks; each check costs one call per prompt per platform. */
+      everyDays: number;
+    };
+  };
 }
 
 export const DEFAULT_CONFIG: SiteConfig = {
@@ -127,6 +149,14 @@ export const DEFAULT_CONFIG: SiteConfig = {
     seeds: [],
     modifiers: ['', 'how to', 'best', 'what is', 'for', 'vs', 'examples', 'free'],
     picksPerRun: 10,
+  },
+  dataforseo: {
+    locationCode: 2840,
+    languageCode: 'en',
+    keywordMetrics: true,
+    minSearchVolume: 10,
+    rankingsFallback: true,
+    aiVisibility: { enabled: true, prompts: [], brandTerms: [], platforms: ['chat_gpt', 'perplexity'], everyDays: 7 },
   },
 };
 
@@ -202,10 +232,21 @@ export interface QueueItem {
   priority?: number;
   why?: string;
   source?: string;
+  /** Monthly searches and difficulty (0-100), from DataForSEO when configured. */
+  volume?: number | null;
+  difficulty?: number | null;
   status: 'pending' | 'writing' | 'done' | 'skipped' | 'failed';
   note?: string;
   addedAt?: string;
   doneAt?: string;
+}
+
+export interface AiVisibilityResult {
+  platform: string;
+  prompt: string;
+  mentioned: boolean;
+  cited: boolean;
+  excerpt: string;
 }
 
 export interface AgentState {
@@ -213,6 +254,8 @@ export interface AgentState {
   meta: Record<string, string>;
   pingedPulls: number[];
   runs: { id: string; date: string; summary: string; usd: number; pr?: string }[];
+  /** Weekly AI-assistant answers to your prompts, newest first. */
+  aiVisibility: { date: string; results: AiVisibilityResult[] }[];
 }
 
 export async function loadQueue(): Promise<QueueItem[]> {
@@ -223,7 +266,7 @@ export async function loadQueue(): Promise<QueueItem[]> {
 export async function loadState(): Promise<AgentState> {
   const raw = await readFile(PATHS.state);
   const s = raw ? (JSON.parse(raw) as Partial<AgentState>) : {};
-  return { refreshed: s.refreshed ?? {}, meta: s.meta ?? {}, pingedPulls: s.pingedPulls ?? [], runs: s.runs ?? [] };
+  return { refreshed: s.refreshed ?? {}, meta: s.meta ?? {}, pingedPulls: s.pingedPulls ?? [], runs: s.runs ?? [], aiVisibility: s.aiVisibility ?? [] };
 }
 
 export const pendingByPriority = (q: QueueItem[]) =>
