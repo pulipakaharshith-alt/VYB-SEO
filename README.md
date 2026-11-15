@@ -139,7 +139,7 @@ your-website/                    ← the repo GITHUB_REPO points at
    | `INDEXNOW_KEY` | no | Bing/Yandex instant indexing; your site must serve `/<key>.txt` |
 
    The full list, including model and price overrides, is in [`.env.example`](.env.example).
-3. **Open the dashboard** (your Vercel URL; any username, your `DASHBOARD_PASSWORD`). Go to **Settings**,
+3. **Open the dashboard** at `https://<your-project>.vercel.app/dashboard` (any username, your `DASHBOARD_PASSWORD`; the home page is a public landing page). Go to **Settings**,
    point it at your blog, and save:
    - `site`, `contentDir`, `urlPattern` (e.g. `/blog/{slug}`), `extension`;
    - `frontmatter`: the field names your blog reads (`title`, `description`, `date`, …). Leave a name

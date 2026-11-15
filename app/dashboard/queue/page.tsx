@@ -4,7 +4,7 @@ import { loadQueue, pendingByPriority, type QueueItem } from '@/lib/config';
 
 const tone = (s: QueueItem['status']) => (s === 'done' ? 'ok' : s === 'failed' ? 'bad' : s === 'pending' || s === 'writing' ? 'warn' : 'muted');
 
-export default async function QueuePage({ searchParams }: PageProps<'/queue'>) {
+export default async function QueuePage({ searchParams }: PageProps<'/dashboard/queue'>) {
   const sp = await searchParams;
   const r = await attempt(async () => {
     const queue = await loadQueue();

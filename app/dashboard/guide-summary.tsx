@@ -15,12 +15,12 @@ export function GuideSummary({ risky, compact = false }: { risky: string[]; comp
             ))}
           </ul>
           <p className="mt-3 text-sm text-muted">
-            Change them in <Link href="/settings" className="underline">Settings</Link>, or keep them if you understand the trade-off.
+            Change them in <Link href="/dashboard/settings" className="underline">Settings</Link>, or keep them if you understand the trade-off.
           </p>
         </section>
       )}
       {!compact && (
-        <Card title="Dos and don’ts" actions={<Link href="/guide" className="text-sm text-accent">Full guide →</Link>}>
+        <Card title="Dos and don’ts" actions={<Link href="/dashboard/guide" className="text-sm text-accent">Full guide →</Link>}>
           <div className="grid gap-4 text-sm sm:grid-cols-2">
             <ul className="space-y-1.5">
               {DOS.slice(0, 4).map((d) => (

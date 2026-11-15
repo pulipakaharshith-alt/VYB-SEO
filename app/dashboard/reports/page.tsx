@@ -2,7 +2,7 @@ import { Card, attempt, ErrorBox } from '../ui';
 import { AGENT_DIR } from '@/lib/config';
 import { listFiles, readFile } from '@/lib/github';
 
-export default async function ReportsPage({ searchParams }: PageProps<'/reports'>) {
+export default async function ReportsPage({ searchParams }: PageProps<'/dashboard/reports'>) {
   const sp = await searchParams;
   const r = await attempt(async () => {
     const files = (await listFiles())
@@ -23,7 +23,7 @@ export default async function ReportsPage({ searchParams }: PageProps<'/reports'
           <ul className="space-y-1 text-sm">
             {files.map((f) => (
               <li key={f}>
-                <a href={`/reports?r=${encodeURIComponent(f)}`} className={f === pick ? 'font-semibold' : 'text-muted hover:text-text'}>
+                <a href={`/dashboard/reports?r=${encodeURIComponent(f)}`} className={f === pick ? 'font-semibold' : 'text-muted hover:text-text'}>
                   {f.split('/').pop()!.replace(/\.md$/, '')}
                 </a>
               </li>
