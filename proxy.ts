@@ -11,6 +11,9 @@ export function proxy(request: NextRequest) {
   if (request.nextUrl.pathname === '/' && (request.method === 'GET' || request.method === 'HEAD')) {
     return NextResponse.next();
   }
+  // Explicit opt-out for a deployment whose owner accepts an open dashboard. Never the default:
+  // with an AI key and GitHub token set, anyone with the URL could start paid runs and open PRs.
+  if (process.env.DASHBOARD_AUTH === 'off') return NextResponse.next();
   const password = process.env.DASHBOARD_PASSWORD;
   if (!password) {
     return new NextResponse('Set DASHBOARD_PASSWORD in your Vercel project settings, then redeploy.', { status: 503 });

@@ -73,6 +73,10 @@ export const env = {
     return read('GITHUB_API_URL') ?? 'https://api.github.com';
   },
 
+  /** "off" disables the dashboard login (explicit opt-out; see SAFETY.md). */
+  get dashboardAuthOff() {
+    return read('DASHBOARD_AUTH') === 'off';
+  },
   get dashboardPassword() {
     return read('DASHBOARD_PASSWORD');
   },
@@ -111,7 +115,7 @@ export function missingSetup(): string[] {
   if (!env.provider) out.push('ANTHROPIC_API_KEY or OPENAI_API_KEY');
   if (!env.githubRepo) out.push('GITHUB_REPO');
   if (!env.githubToken) out.push('GITHUB_TOKEN');
-  if (!env.dashboardPassword) out.push('DASHBOARD_PASSWORD');
+  if (!env.dashboardPassword && !env.dashboardAuthOff) out.push('DASHBOARD_PASSWORD');
   if (!env.cronSecret) out.push('CRON_SECRET');
   return out;
 }

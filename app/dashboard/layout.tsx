@@ -1,5 +1,6 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
+import { env } from '@/lib/env';
 
 export const metadata: Metadata = {
   title: 'SEO Agent dashboard',
@@ -32,6 +33,15 @@ export default function DashboardLayout({ children }: LayoutProps<'/dashboard'>)
           </nav>
         </div>
       </header>
+      {env.dashboardAuthOff && (
+        <div className="border-b border-bad/40 bg-panel">
+          <p className="mx-auto max-w-5xl px-4 py-2 text-sm text-bad">
+            This dashboard is public (DASHBOARD_AUTH=off): anyone with the URL can start runs and change settings
+            {env.provider || env.githubToken ? ', and an AI key or GitHub token is set, so that means spending your credit and opening PRs.' : '.'} Set a
+            DASHBOARD_PASSWORD and remove DASHBOARD_AUTH in Vercel to lock it again.
+          </p>
+        </div>
+      )}
       <main className="mx-auto max-w-5xl px-4 py-8">{children}</main>
     </>
   );
