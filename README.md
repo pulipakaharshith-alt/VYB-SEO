@@ -132,14 +132,15 @@ your-website/                    ← the repo GITHUB_REPO points at
    | `ANTHROPIC_API_KEY` or `OPENAI_API_KEY` | yes | your own key; set both to split work with `AI_PROVIDER` / `AI_PLANNER_PROVIDER` |
    | `GITHUB_REPO` | yes | the repo with your blog, `owner/name` |
    | `GITHUB_TOKEN` | yes | fine-grained token for that repo only: **Contents** read & write, **Pull requests** read & write |
-   | `DASHBOARD_PASSWORD` | yes | protects the dashboard and its actions |
+   | `DASHBOARD_PASSWORD` | yes, until GitHub sign-in is set up | protects the dashboard and its actions |
+   | `GITHUB_OAUTH_CLIENT_ID`, `GITHUB_OAUTH_CLIENT_SECRET` | recommended | **Sign in with GitHub** instead of a password; only the repo owner (or `DASHBOARD_USERS`) gets in. See [SETUP.md](SETUP.md#sign-in-with-github) |
    | `CRON_SECRET` | yes | random string (`openssl rand -hex 32`); Vercel Cron uses it to start the daily run |
    | `GOOGLE_SERVICE_ACCOUNT_EMAIL`, `GOOGLE_PRIVATE_KEY` | no | Search Console data and Google indexing pings |
    | `DATAFORSEO_API_KEY` | no | real keyword volumes and difficulty, rankings, weekly AI-visibility checks (pay per use) |
    | `INDEXNOW_KEY` | no | Bing/Yandex instant indexing; your site must serve `/<key>.txt` |
 
    The full list, including model and price overrides, is in [`.env.example`](.env.example).
-3. **Open the dashboard** at `https://<your-project>.vercel.app/dashboard` (any username, your `DASHBOARD_PASSWORD`; the home page is a public landing page). Go to **Settings**,
+3. **Open the dashboard** at `https://<your-project>.vercel.app/dashboard`. Sign in with GitHub, or with the password before that's set up (any username, your `DASHBOARD_PASSWORD`). The home page is a public landing page. Go to **Settings**,
    point it at your blog, and save:
    - `site`, `contentDir`, `urlPattern` (e.g. `/blog/{slug}`), `extension`;
    - `frontmatter`: the field names your blog reads (`title`, `description`, `date`, …). Leave a name

@@ -75,7 +75,11 @@ export const env = {
 
   /** "off" disables the dashboard login (explicit opt-out; see SAFETY.md). */
   get dashboardAuthOff() {
-    return read('DASHBOARD_AUTH') === 'off';
+    // GitHub sign-in, when configured, always wins over the opt-out.
+    return read('DASHBOARD_AUTH') === 'off' && !(read('GITHUB_OAUTH_CLIENT_ID') && read('GITHUB_OAUTH_CLIENT_SECRET'));
+  },
+  get githubSignIn() {
+    return Boolean(read('GITHUB_OAUTH_CLIENT_ID') && read('GITHUB_OAUTH_CLIENT_SECRET'));
   },
   get dashboardPassword() {
     return read('DASHBOARD_PASSWORD');
@@ -115,7 +119,7 @@ export function missingSetup(): string[] {
   if (!env.provider) out.push('ANTHROPIC_API_KEY or OPENAI_API_KEY');
   if (!env.githubRepo) out.push('GITHUB_REPO');
   if (!env.githubToken) out.push('GITHUB_TOKEN');
-  if (!env.dashboardPassword && !env.dashboardAuthOff) out.push('DASHBOARD_PASSWORD');
+  if (!env.githubSignIn && !env.dashboardPassword && !env.dashboardAuthOff) out.push('GitHub sign-in (GITHUB_OAUTH_CLIENT_ID/SECRET) or DASHBOARD_PASSWORD');
   if (!env.cronSecret) out.push('CRON_SECRET');
   return out;
 }

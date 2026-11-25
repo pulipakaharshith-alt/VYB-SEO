@@ -63,7 +63,7 @@ the PR, and if a refreshed page drops in rankings, revert that file.
 | Guard | How |
 |---|---|
 | Least-privilege token | Use a fine-grained GitHub token for **only** the website repo, with Contents and Pull requests write. Nothing else. |
-| Dashboard locked | **Enforced.** Every dashboard page and action requires `DASHBOARD_PASSWORD`; the cron route requires `CRON_SECRET`. `DASHBOARD_AUTH=off` turns the login off as an explicit opt-out, and the dashboard then shows a warning on every page. Don't use it once an AI key or GitHub token is set. |
+| Dashboard locked | **Enforced.** Every dashboard page and action requires a sign-in: **GitHub sign-in** (recommended; only the repo owner or `DASHBOARD_USERS`; a signed 14-day cookie; it reads only your username) or `DASHBOARD_PASSWORD`; the cron route requires `CRON_SECRET`. `DASHBOARD_AUTH=off` turns the login off as an explicit opt-out, and the dashboard then shows a warning on every page. Don't use it once an AI key or GitHub token is set. |
 | Keys stay yours | Keys live only in your Vercel env vars or GitHub secrets. The code never logs or commits them. |
 | Prompt injection | **Guided + enforced.** Web pages are treated as untrusted data in prompts; external link limits and the claims check catch injected links or claims. |
 
