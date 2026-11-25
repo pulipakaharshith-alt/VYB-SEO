@@ -133,7 +133,7 @@ export default function Landing() {
         <div className="mx-auto flex max-w-5xl flex-wrap items-center justify-between gap-3 px-4 py-6 text-sm text-muted">
           <span>MIT licensed · Endpoint research credit: OpenSEO</span>
           <span>
-            Running your own copy? <Link href="/dashboard" className="underline">Open the dashboard</Link> (password protected).
+            Running your own copy? <Link href="/dashboard" className="underline">Open the dashboard</Link> (sign in with GitHub).
           </span>
         </div>
       </footer>

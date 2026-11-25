@@ -1,6 +1,8 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
+import { cookies } from 'next/headers';
 import { env } from '@/lib/env';
+import { SESSION_COOKIE, readSession } from '@/lib/session';
 
 export const metadata: Metadata = {
   title: 'SEO Agent dashboard',
@@ -16,7 +18,8 @@ const NAV = [
   { href: '/dashboard/guide', label: 'Dos & don’ts' },
 ];
 
-export default function DashboardLayout({ children }: LayoutProps<'/dashboard'>) {
+export default async function DashboardLayout({ children }: LayoutProps<'/dashboard'>) {
+  const user = readSession((await cookies()).get(SESSION_COOKIE)?.value);
   return (
     <>
       <header className="border-b border-line bg-panel">
@@ -31,6 +34,14 @@ export default function DashboardLayout({ children }: LayoutProps<'/dashboard'>)
               </Link>
             ))}
           </nav>
+          {user && (
+            <span className="ml-auto text-sm text-muted">
+              @{user} ·{' '}
+              <a href="/auth/logout" className="hover:text-text">
+                Sign out
+              </a>
+            </span>
+          )}
         </div>
       </header>
       {env.dashboardAuthOff && (

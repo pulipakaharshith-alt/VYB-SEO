@@ -276,6 +276,24 @@ Notes: runs count against your plan's usage limits (default schedule is twice a 
 account that created it and lasts a year; check Anthropic's current terms for automated use on your plan.
 Scheduled workflows on public repos pause after 60 days without repo activity.
 
+## Sign in with GitHub
+
+Recommended once the copy is deployed: no password to remember, and only the right people get in.
+
+1. 👤 GitHub → Settings → Developer settings → **OAuth Apps** → **New OAuth App**:
+   - Application name: `SEO agent` (anything)
+   - Homepage URL: `https://<your-project>.vercel.app`
+   - Authorization callback URL: `https://<your-project>.vercel.app/auth/callback`
+2. 👤 Register it, copy the **Client ID**, then **Generate a new client secret** and copy it.
+3. 👤 In Vercel → the project → Environment Variables, add `GITHUB_OAUTH_CLIENT_ID` and `GITHUB_OAUTH_CLIENT_SECRET`
+   (Production), then redeploy.
+4. Open `/dashboard` and click through **Sign in with GitHub**. By default only the GitHub account that owns
+   `GITHUB_REPO` gets in. To let others in, set `DASHBOARD_USERS` to a comma-separated list of GitHub usernames.
+
+It only reads your GitHub username: no repo or email access, and nothing is stored. The session is a signed
+cookie that lasts 14 days. Once it's set up, it replaces the password and overrides `DASHBOARD_AUTH=off`. You can
+then delete `DASHBOARD_PASSWORD`.
+
 ## Optional upgrades
 
 - **Search Console:** the agent then picks pages to refresh by real ranking data and rewrites titles of pages
@@ -294,7 +312,10 @@ Scheduled workflows on public repos pause after 60 days without repo activity.
 
 | Symptom | Fix |
 |---|---|
-| Dashboard says "Set DASHBOARD_PASSWORD" | add it in Vercel and redeploy |
+| Dashboard says "Set up sign-in" | add GitHub sign-in (below) or `DASHBOARD_PASSWORD` in Vercel and redeploy |
+| "Not your dashboard" after GitHub sign-in | only the owner of `GITHUB_REPO` gets in by default; add others to `DASHBOARD_USERS=alice,bob` |
+| GitHub says "redirect_uri is not associated with this application" | the OAuth app's callback URL must be exactly `https://<your-domain>/auth/callback`, and you must open the dashboard on that same domain |
+| Forgot the dashboard password | set up GitHub sign-in (below), or set a new `DASHBOARD_PASSWORD` in Vercel and redeploy; the old one can't be read back |
 | "GitHub 404" on the checklist | `GITHUB_REPO` is wrong, or the token doesn't include that repo |
 | "GitHub 403" when a run commits | token needs Contents + Pull requests **write** |
 | Run starts but no PR | check the report in `.seo-agent/reports/`: every draft may have failed the quality check (see "Not published") or the spend cap was reached |
